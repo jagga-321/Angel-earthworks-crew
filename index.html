@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AE Crew"/>
+<meta name="theme-color" content="#1A6B3C"/>
+<title>Angel Earthworks — Crew Timesheet</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{background:#0D0D0D;color:#F0EDE8;font-family:'Courier New',monospace;min-height:100vh;font-size:14px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+input,select,textarea,button{font-family:inherit;font-size:14px;outline:none}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=time]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
+select option{background:#1a1a1a;color:#F0EDE8}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* Layout */
+#header{background:#141414;border-bottom:1px solid #282828;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+#banner{background:linear-gradient(90deg,#0A2218,#0D2010);border-bottom:1px solid #1A6B3C40;padding:10px 16px;display:none;justify-content:space-between;align-items:center}
+#nav{background:#141414;border-bottom:1px solid #282828;display:flex;overflow-x:auto;padding:0 4px}
+#main{padding:14px 14px 80px;max-width:600px;margin:0 auto}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;box-shadow:0 4px 24px #0008;white-space:nowrap;display:none;animation:fadeUp .2s ease}
+
+/* Nav */
+.nav-tab{background:none;border:none;color:#6E6B64;padding:11px 16px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
+.nav-tab.active{color:#22A05A;border-bottom-color:#22A05A}
+
+/* Cards */
+.card{background:#1C1C1C;border:1px solid #282828;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+
+/* Buttons */
+.btn{border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;font-size:13px;padding:10px 18px;letter-spacing:.4px;white-space:nowrap;border:none;transition:opacity .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-green{background:#1A6B3C;color:#fff}
+.btn-ghost{background:transparent;color:#6E6B64;border:1px solid #282828 !important}
+.btn-danger{background:#D93B3B18;color:#D93B3B;border:1px solid #D93B3B35 !important}
+.btn-sm{font-size:11px;padding:6px 13px}
+
+/* Form */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:10px;font-weight:700;color:#6E6B64;letter-spacing:1.2px;text-transform:uppercase}
+.field input,.field select,.field textarea{background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%}
+.field textarea{resize:vertical;min-height:60px}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
+
+/* Smart input with dropdown */
+.smart-wrap{position:relative}
+.smart-drop{position:absolute;top:100%;left:0;right:0;background:#1C1C1C;border:1px solid #333;border-radius:0 0 8px 8px;z-index:50;max-height:180px;overflow-y:auto;display:none}
+.smart-drop.open{display:block}
+.smart-opt{padding:10px 12px;cursor:pointer;font-size:13px;color:#F0EDE8;border-bottom:1px solid #282828;display:flex;justify-content:space-between;align-items:center}
+.smart-opt:hover,.smart-opt:active{background:#282828}
+.smart-opt-del{color:#6E6B64;font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid #333;background:none;cursor:pointer;font-family:inherit}
+.smart-opt-del:active{color:#D93B3B;border-color:#D93B3B}
+
+/* Stats */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:#1C1C1C;border:1px solid #282828;border-radius:12px;padding:14px 16px;flex:1 1 120px}
+.stat-label{font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+.stat-value{font-size:20px;font-weight:800;line-height:1.1}
+
+/* Badge */
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+
+/* Entry cards */
+.entry-item{background:#1C1C1C;border:1px solid #282828;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+
+/* Lunch grid */
+.lunch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.lbtn{background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;font-size:12px;font-weight:700;padding:10px 4px;cursor:pointer;font-family:inherit;text-align:center;transition:all .15s}
+.lbtn.sel{background:#1A6B3C;border-color:#22A05A;color:#fff}
+
+/* Modal */
+#overlay{position:fixed;inset:0;background:#000000bb;z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+#overlay.open{display:flex}
+.modal{background:#141414;border:1px solid #333;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-head h3{font-size:16px;font-weight:800;color:#F0EDE8}
+.modal-close{background:none;border:none;color:#6E6B64;font-size:24px;cursor:pointer;line-height:1;padding:0 4px}
+
+/* PIN */
+#pin-screen{position:fixed;inset:0;background:#0D0D0D;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.pin-dots{display:flex;justify-content:center;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#282828;margin:0 7px;transition:background .12s}
+.pin-dot.filled{background:#22A05A}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;width:100%}
+.pin-btn{background:#1C1C1C;border:1px solid #282828;border-radius:12px;color:#F0EDE8;font-size:22px;font-weight:700;padding:16px;cursor:pointer;font-family:inherit}
+.pin-btn:active{background:#2A2A2A}
+.pin-shake{animation:shake .3s}
+
+/* Timer */
+#timer-display{font-variant-numeric:tabular-nums;color:#22A05A;font-weight:800;font-size:16px}
+.blink{animation:blink 1.4s infinite}
+
+.divider{display:flex;align-items:center;gap:10px;margin:8px 0}
+.divider span{font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}
+.divider hr{flex:1;border:none;border-top:1px solid #282828}
+.empty{text-align:center;padding:36px 20px;color:#6E6B64}
+.empty-icon{font-size:30px;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen">
+  <div style="margin-bottom:28px">
+    <div style="font-size:12px;font-weight:800;color:#22A05A;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">⛏ Angel Earthworks</div>
+    <div style="font-size:22px;font-weight:800;color:#F0EDE8;margin-bottom:6px">Crew Timesheet</div>
+    <div style="font-size:12px;color:#6E6B64">Enter your PIN to clock in</div>
+  </div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+  </div>
+  <div id="pin-err" style="color:#D93B3B;font-size:12px;min-height:18px;margin-bottom:12px"></div>
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pp('1')">1</button><button class="pin-btn" onclick="pp('2')">2</button><button class="pin-btn" onclick="pp('3')">3</button>
+    <button class="pin-btn" onclick="pp('4')">4</button><button class="pin-btn" onclick="pp('5')">5</button><button class="pin-btn" onclick="pp('6')">6</button>
+    <button class="pin-btn" onclick="pp('7')">7</button><button class="pin-btn" onclick="pp('8')">8</button><button class="pin-btn" onclick="pp('9')">9</button>
+    <button class="pin-btn" style="font-size:13px;color:#6E6B64" onclick="pclr()">Clear</button>
+    <button class="pin-btn" onclick="pp('0')">0</button>
+    <button class="pin-btn" style="font-size:17px;color:#6E6B64" onclick="pbk()">⌫</button>
+  </div>
+  <div style="margin-top:20px;font-size:11px;color:#6E6B64;text-align:center;line-height:1.6">
+    Worker default PIN: <strong style="color:#C8C4BE">1234</strong><br/>
+    Manager PIN: <strong style="color:#C8C4BE">0000</strong>
+  </div>
+  <button onclick="resetApp()" style="margin-top:16px;background:none;border:none;color:#3A3A3A;font-size:10px;cursor:pointer;font-family:inherit;text-decoration:underline">Reset app data</button>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div id="header">
+    <div>
+      <div style="font-size:11px;font-weight:800;color:#22A05A;letter-spacing:2px;text-transform:uppercase">⛏ AE Crew</div>
+      <div id="crew-name-hdr" style="font-size:13px;color:#F0EDE8;font-weight:700;margin-top:1px">—</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div id="live-badge" style="display:none;background:#22A05A18;border:1px solid #22A05A40;border-radius:8px;padding:5px 12px;align-items:center;gap:8px">
+        <span class="blink" style="width:7px;height:7px;border-radius:50%;background:#22A05A;display:inline-block"></span>
+        <span id="timer-display">00:00:00</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="lockApp()" style="padding:6px 10px">🔒</button>
+    </div>
+  </div>
+
+  <div id="banner">
+    <div>
+      <div style="font-size:10px;color:#22A05A;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">🟢 On the Clock</div>
+      <div id="banner-detail" style="font-size:13px;color:#C8C4BE;margin-top:2px"></div>
+      <div id="banner-sub" style="font-size:11px;color:#6E6B64;margin-top:1px"></div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="showClockOff()">⏹ Clock Off</button>
+  </div>
+
+  <div id="nav">
+    <button class="nav-tab active" data-tab="clock" onclick="switchTab('clock')">🕐 Clock</button>
+    <button class="nav-tab" data-tab="history" onclick="switchTab('history')">📋 My Hours</button>
+    <button class="nav-tab" data-tab="manual" onclick="switchTab('manual')">✎ Manual Entry</button>
+    <button class="nav-tab" data-tab="manage" id="manage-tab" style="display:none" onclick="switchTab('manage')">⚙ Manage</button>
+  </div>
+
+  <div id="main"></div>
+</div>
+
+<div id="toast"></div>
+<div id="overlay" onclick="hoClick(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-head"><h3 id="modal-title"></h3><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ════════════ DATA ════════════
+function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+
+// Crew members — boss manages via boss app localStorage key ae_crew
+// We also maintain our own list with PINs
+let members   = ld("ae_crew_pins",[{id:"default",name:"Crew Member",pin:"1234",role:"Operator"}]);
+// Manager PIN loaded fresh each time from storage in checkPin()
+let entries   = ld("ae_crew_entries",[]);
+let active    = ld("ae_crew_active",null);
+
+// Smart history lists — remembered clients/sites/notes
+let history   = ld("ae_history",{clients:[],sites:[],notes:[]});
+
+let me        = null; // logged in crew member
+let tab       = "clock";
+let timerInt  = null;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fDate=d=>d?new Date(d).toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"}):"—";
+const fTime=d=>d?new Date(d).toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"}):"—";
+const fHrs=h=>{if(!h||h<=0)return"0h 0m";const hh=Math.floor(h),mm=Math.round((h-hh)*60);return mm>0?`${hh}h ${mm}m`:`${hh}h`;};
+const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+const MACHINES=["Hitachi ZX55U","Hino 700","Both"];
+const ATTACH=["General Bucket","Trenching Bucket","Auger","Rock Breaker","Tilt Bucket","Clean-up Bucket"];
+
+function saveAll(){sv("ae_crew_pins",members);sv("ae_crew_entries",entries);sv("ae_crew_active",active);sv("ae_history",history);}
+
+// ════════════ HISTORY / SMART INPUT ════════════
+function addHistory(type,val){
+  if(!val||!val.trim()) return;
+  val=val.trim();
+  if(!history[type]) history[type]=[];
+  if(!history[type].includes(val)){
+    history[type].unshift(val);
+    if(history[type].length>20) history[type]=history[type].slice(0,20);
+    sv("ae_history",history);
+  }
+}
+function removeHistory(type,val){
+  history[type]=history[type].filter(v=>v!==val);
+  sv("ae_history",history);
+}
+
+// Build a smart text input with dropdown of previous values
+function smartInput(id,type,placeholder,value=""){
+  const opts=(history[type]||[]).map(v=>`
+    <div class="smart-opt" onclick="pickSmart('${id}','${esc(v)}')">
+      <span>${esc(v)}</span>
+      <button class="smart-opt-del" onclick="event.stopPropagation();delSmartOpt('${id}','${type}','${esc(v)}')">✕</button>
+    </div>`).join("");
+  return `
+    <div class="smart-wrap">
+      <input id="${id}" value="${esc(value)}" placeholder="${esc(placeholder)}"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"
+        autocomplete="off"
+        oninput="filterSmart('${id}','${type}',this.value)"
+        onfocus="openSmartDrop('${id}')"
+        onblur="setTimeout(()=>closeSmartDrop('${id}'),200)"/>
+      <div class="smart-drop" id="${id}-drop">${opts}</div>
+    </div>`;
+}
+function openSmartDrop(id){
+  const d=document.getElementById(id+"-drop");
+  if(d&&d.children.length>0) d.classList.add("open");
+}
+function closeSmartDrop(id){
+  const d=document.getElementById(id+"-drop");
+  if(d) d.classList.remove("open");
+}
+function pickSmart(id,val){
+  const el=document.getElementById(id);
+  if(el){el.value=val;closeSmartDrop(id);}
+}
+function filterSmart(id,type,q){
+  const d=document.getElementById(id+"-drop");
+  if(!d) return;
+  const list=(history[type]||[]).filter(v=>v.toLowerCase().includes(q.toLowerCase()));
+  if(list.length===0){d.classList.remove("open");return;}
+  d.innerHTML=list.map(v=>`
+    <div class="smart-opt" onclick="pickSmart('${id}','${esc(v)}')">
+      <span>${esc(v)}</span>
+      <button class="smart-opt-del" onclick="event.stopPropagation();delSmartOpt('${id}','${type}','${esc(v)}')">✕</button>
+    </div>`).join("");
+  d.classList.add("open");
+}
+function delSmartOpt(id,type,val){
+  removeHistory(type,val);
+  filterSmart(id,type,document.getElementById(id)?.value||"");
+}
+
+// ════════════ PIN ════════════
+let pin="";
+function pp(d){if(pin.length>=4)return;pin+=d;updDots();if(pin.length===4)setTimeout(checkPin,120);}
+function pbk(){pin=pin.slice(0,-1);updDots();document.getElementById("pin-err").textContent="";}
+function pclr(){pin="";updDots();document.getElementById("pin-err").textContent="";}
+function updDots(){for(let i=0;i<4;i++)document.getElementById("pd"+i).classList.toggle("filled",i<pin.length);}
+function checkPin(){
+  // Check manager PIN first
+  const mgPin=ld("ae_mgr_pin","0000");
+  if(pin===mgPin){
+    pin=""; updDots();
+    document.getElementById("pin-screen").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("crew-name-hdr").textContent="Manager";
+    me={id:"__manager__",name:"Manager",role:"Manager",pin:mgPin};
+    tab="manage";
+    render();
+    toast("Manager access ✅");
+    return;
+  }
+  const m=members.find(x=>x.pin===pin);
+  if(m){
+    me=m;
+    document.getElementById("pin-screen").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("crew-name-hdr").textContent=m.name;
+    pin=""; updDots();
+    tab="clock";
+    if(active&&active.crewId===m.id){updateBanner();startTimer();}
+    render(); toast("Welcome "+m.name+" 👋");
+  } else {
+    document.getElementById("pin-err").textContent="Incorrect PIN — try again";
+    const dots=document.getElementById("pin-dots");
+    dots.classList.add("pin-shake");
+    setTimeout(()=>dots.classList.remove("pin-shake"),350);
+    pin=""; updDots();
+  }
+}
+function lockApp(){
+  if(active&&!confirm("Active session running. Lock anyway?")) return;
+  me=null;
+  document.getElementById("pin-screen").style.display="flex";
+  document.getElementById("app").style.display="none";
+  if(timerInt){clearInterval(timerInt);timerInt=null;}
+}
+
+// ════════════ TIMER ════════════
+function startTimer(){
+  if(timerInt) clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    if(!active){clearInterval(timerInt);return;}
+    const el=Math.floor((Date.now()-new Date(active.startTime).getTime())/1000);
+    const h=Math.floor(el/3600),m=Math.floor((el%3600)/60),s=el%60;
+    const td=document.getElementById("timer-display");
+    if(td) td.textContent=String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  },1000);
+}
+function updateBanner(){
+  const bn=document.getElementById("banner"),lb=document.getElementById("live-badge");
+  if(active&&active.crewId===me?.id){
+    bn.style.display="flex"; lb.style.display="flex";
+    document.getElementById("banner-detail").textContent=
+      active.machine+(active.attachment&&active.attachment!=="General Bucket"?" · "+active.attachment:"")
+      +(active.client?" · "+active.client:"")+(active.site?" · "+active.site:"");
+    document.getElementById("banner-sub").textContent="Started "+fTime(active.startTime);
+    startTimer();
+  } else {
+    bn.style.display="none"; lb.style.display="none";
+    if(timerInt){clearInterval(timerInt);timerInt=null;}
+  }
+}
+
+// ════════════ CLOCK IN ════════════
+function clockIn(){
+  if(active){toast("Already clocked in","error");return;}
+  const client=document.getElementById("ci-client").value.trim();
+  const site=document.getElementById("ci-site").value.trim();
+  const machine=document.getElementById("ci-machine").value;
+  const attach=machine!=="Hino 700"?(document.getElementById("ci-attach")?.value||"General Bucket"):"None";
+  const notes=document.getElementById("ci-notes").value.trim();
+  // Save to history
+  addHistory("clients",client); addHistory("sites",site); addHistory("notes",notes);
+  active={id:uid(),crewId:me.id,crewName:me.name,client,site,machine,attachment:attach,notes,startTime:new Date().toISOString()};
+  saveAll(); updateBanner(); closeModal();
+  toast("Clocked in ✅"); render();
+}
+
+// ════════════ CLOCK OFF ════════════
+let _stopEnd,_stopRaw,_stopLunch=0;
+function showClockOff(){
+  if(!active) return;
+  _stopEnd=new Date().toISOString();
+  _stopRaw=(new Date(_stopEnd)-new Date(active.startTime))/3600000;
+  _stopLunch=0;
+  const body=document.getElementById("modal-body");
+  document.getElementById("modal-title").textContent="⏹ Clock Off";
+  document.getElementById("overlay").classList.add("open");
+  body.innerHTML=`
+    <div style="background:#0D0D0D;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Your Session</div>
+      <div style="font-size:13px;color:#F0EDE8">${esc(active.machine)}${active.attachment&&active.attachment!=="General Bucket"&&active.attachment!=="None"?" · "+esc(active.attachment):""}</div>
+      ${active.client?`<div style="font-size:12px;color:#6E6B64;margin-top:2px">${esc(active.client)}${active.site?" · "+esc(active.site):""}</div>`:""}
+      <div style="font-size:11px;color:#6E6B64;margin-top:4px">${fTime(active.startTime)} → ${fTime(_stopEnd)}</div>
+      <div style="font-size:15px;color:#22A05A;font-weight:700;margin-top:8px">Total on clock: ${fHrs(_stopRaw)}</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Lunch Break?</div>
+      <div class="lunch-grid">
+        ${[0,15,20,30,45,60].map(m=>`<button class="lbtn${m===0?" sel":""}" id="lb${m}" onclick="selLunch(${m})">${m===0?"No Break":m+"min"}</button>`).join("")}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:#6E6B64;white-space:nowrap">Other:</span>
+        <input type="number" min="0" max="120" placeholder="mins" id="lunch-custom"
+          style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:8px 10px;width:76px;font-family:inherit;font-size:13px"
+          onchange="selLunchCustom(+this.value)"/>
+        <span style="font-size:11px;color:#6E6B64">mins</span>
+      </div>
+    </div>
+    <div style="background:#0D0D0D;border-radius:10px;padding:14px;margin-bottom:14px" id="stop-preview">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="color:#6E6B64">Time on clock</span><span style="color:#F0EDE8">${fHrs(_stopRaw)}</span>
+      </div>
+      <div id="lunch-row" style="display:none;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="color:#6E6B64">Less lunch</span><span style="color:#D93B3B" id="lunch-val">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1px solid #282828;padding-top:10px">
+        <span style="color:#6E6B64">Billable hours</span>
+        <span style="color:#22A05A" id="billable-hrs">${fHrs(_stopRaw)}</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-green" style="flex:1" onclick="confirmClockOff()">✅ Confirm & Save</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`;
+}
+function selLunch(m){
+  _stopLunch=m;
+  [0,15,20,30,45,60].forEach(x=>{const b=document.getElementById("lb"+x);if(b)b.className="lbtn"+(x===m?" sel":"");});
+  updStopPreview();
+}
+function selLunchCustom(m){
+  _stopLunch=m;
+  [0,15,20,30,45,60].forEach(x=>{const b=document.getElementById("lb"+x);if(b)b.className="lbtn";});
+  updStopPreview();
+}
+function updStopPreview(){
+  const billable=Math.max(0,_stopRaw-(_stopLunch/60));
+  const lr=document.getElementById("lunch-row"),lv=document.getElementById("lunch-val"),bh=document.getElementById("billable-hrs");
+  if(lr) lr.style.display=_stopLunch>0?"flex":"none";
+  if(lv) lv.textContent="− "+_stopLunch+"min";
+  if(bh) bh.textContent=fHrs(billable);
+}
+function confirmClockOff(){
+  const billable=Math.max(0,_stopRaw-(_stopLunch/60));
+  const entry={id:uid(),crewId:me.id,crewName:me.name,
+    client:active.client,site:active.site,machine:active.machine,attachment:active.attachment,
+    notes:active.notes,startTime:active.startTime,endTime:_stopEnd,
+    duration:billable,rawDuration:_stopRaw,lunchBreak:_stopLunch,date:active.startTime.split("T")[0]};
+  entries.unshift(entry);
+  active=null;
+  saveAll(); updateBanner(); closeModal();
+  toast("Saved — "+fHrs(billable)+((_stopLunch>0)?" (excl. "+_stopLunch+"min lunch)":""));
+  render();
+}
+
+// ════════════ MANUAL ENTRY ════════════
+function saveManual(){
+  const client=document.getElementById("me-client").value.trim();
+  const date=document.getElementById("me-date").value;
+  const startT=document.getElementById("me-start").value;
+  const endT=document.getElementById("me-end").value;
+  if(!client){toast("Enter a client name","error");return;}
+  if(!date||!startT||!endT){toast("Enter date and times","error");return;}
+  const sISO=new Date(date+"T"+startT).toISOString();
+  const eISO=new Date(date+"T"+endT).toISOString();
+  if(new Date(eISO)<=new Date(sISO)){toast("End must be after start","error");return;}
+  const rawDur=(new Date(eISO)-new Date(sISO))/3600000;
+  const lunch=parseInt(document.getElementById("me-lunch-val")?.value||"0")||0;
+  const duration=Math.max(0,rawDur-(lunch/60));
+  const site=document.getElementById("me-site").value.trim();
+  const machine=document.getElementById("me-machine").value;
+  const attach=machine!=="Hino 700"?(document.getElementById("me-attach")?.value||"General Bucket"):"None";
+  const notes=document.getElementById("me-notes").value.trim();
+  addHistory("clients",client); addHistory("sites",site); addHistory("notes",notes);
+  entries.unshift({id:uid(),crewId:me.id,crewName:me.name,client,site,machine,attachment:attach,
+    notes,startTime:sISO,endTime:eISO,duration,rawDuration:rawDur,lunchBreak:lunch,date});
+  entries.sort((a,b)=>new Date(b.startTime)-new Date(a.startTime));
+  saveAll(); switchTab("history");
+  toast("Entry saved — "+fHrs(duration)); render();
+}
+let _meLunch=0;
+function meSelLunch(m){
+  _meLunch=m;
+  document.getElementById("me-lunch-val").value=m;
+  [0,15,20,30,45,60].forEach(x=>{const b=document.getElementById("melb"+x);if(b)b.className="lbtn"+(x===m?" sel":"");});
+}
+function meSelLunchCustom(val){
+  _meLunch=parseInt(val)||0;
+  [0,15,20,30,45,60].forEach(x=>{const b=document.getElementById("melb"+x);if(b)b.className="lbtn";});
+}
+function meMachineChange(){
+  const m=document.getElementById("me-machine").value;
+  const aw=document.getElementById("me-attach-wrap");
+  if(aw) aw.style.display=m==="Hino 700"?"none":"block";
+}
+function ciMachineChange(){
+  const m=document.getElementById("ci-machine")?.value;
+  const aw=document.getElementById("ci-attach-wrap");
+  if(aw) aw.style.display=m==="Hino 700"?"none":"block";
+}
+
+function deleteEntry(id){
+  if(!confirm("Delete this entry?")) return;
+  entries=entries.filter(e=>e.id!==id);
+  saveAll(); render(); toast("Entry deleted");
+}
+
+// ════════════ MODAL ════════════
+function openModal(type){
+  const overlay=document.getElementById("overlay");
+  const title=document.getElementById("modal-title");
+  const body=document.getElementById("modal-body");
+  overlay.classList.add("open");
+
+  if(type==="clockin"){
+    title.textContent="🟢 Clock In";
+    const attOpts=ATTACH.map(a=>`<option value="${a}">${a}</option>`).join("");
+    body.innerHTML=`
+      <div class="field"><label>Client / Company</label>${smartInput("ci-client","clients","e.g. South Coast Sand & Civil")}</div>
+      <div class="field"><label>Site / Location</label>${smartInput("ci-site","sites","e.g. Goolwa North Stage 1")}</div>
+      <div class="field"><label>Machine</label>
+        <select id="ci-machine" onchange="ciMachineChange()">
+          ${MACHINES.map(m=>`<option>${m}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field" id="ci-attach-wrap"><label>Attachment</label>
+        <select id="ci-attach">${attOpts}</select>
+      </div>
+      <div class="field"><label>Notes (optional)</label>${smartInput("ci-notes","notes","Any site notes")}</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-green" style="flex:1" onclick="clockIn()">▶ Start Clock</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      </div>`;
+  }
+}
+function closeModal(){document.getElementById("overlay").classList.remove("open");}
+function hoClick(e){if(e.target===document.getElementById("overlay"))closeModal();}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+
+// ════════════ NAV & RENDER ════════════
+function switchTab(t){
+  tab=t;
+  document.querySelectorAll(".nav-tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  render();
+}
+function toast(msg,type="success"){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.style.background=type==="error"?"#D93B3B":"#1A6B3C";
+  t.style.display="block"; setTimeout(()=>t.style.display="none",2800);
+}
+
+function render(){
+  var main=document.getElementById("main");
+  if(!main) return;
+  var isManager=(me && me.id==="__manager__");
+
+  // Show/hide tabs
+  var tabs=["clock","history","manual","manage"];
+  tabs.forEach(function(t){
+    var btn=document.querySelector(".nav-tab[data-tab='"+t+"']");
+    if(!btn) return;
+    if(t==="manage") btn.style.display=isManager?"inline-block":"none";
+    else btn.style.display=isManager?"none":"inline-block";
+  });
+
+  // Render content
+  try{
+    if(tab==="clock")   main.innerHTML=renderClock();
+    else if(tab==="history") main.innerHTML=renderHistory();
+    else if(tab==="manual")  main.innerHTML=renderManual();
+    else if(tab==="manage")  main.innerHTML=renderManage();
+    else main.innerHTML=renderClock();
+  }catch(err){
+    console.error("Render error:",err);
+    main.innerHTML='<div class="card"><div style="text-align:center;padding:30px;color:#D93B3B">Screen error — tap 🔒 to lock and try again.<br><br><small>'+String(err)+'</small></div></div>';
+  }
+}
+
+function renderClock(){
+  const myEntries=entries.filter(e=>e.crewId===me?.id);
+  const weekAgo=new Date(Date.now()-7*86400000);
+  const weekHrs=myEntries.filter(e=>new Date(e.startTime)>=weekAgo).reduce((a,e)=>a+(e.duration||0),0);
+  const todayStr=new Date().toDateString();
+  const todayHrs=myEntries.filter(e=>new Date(e.startTime).toDateString()===todayStr).reduce((a,e)=>a+(e.duration||0),0);
+  const totalHrs=myEntries.reduce((a,e)=>a+(e.duration||0),0);
+  const hasActive=active&&active.crewId===me?.id;
+
+  return `
+    <div class="stats-row" style="margin-top:4px">
+      <div class="stat"><div class="stat-label">Today</div><div class="stat-value" style="color:#22A05A">${fHrs(todayHrs)}</div></div>
+      <div class="stat"><div class="stat-label">This Week</div><div class="stat-value" style="color:#F5C518">${fHrs(weekHrs)}</div></div>
+      <div class="stat"><div class="stat-label">All Time</div><div class="stat-value" style="color:#E8580A">${fHrs(totalHrs)}</div></div>
+    </div>
+
+    <div class="card" style="text-align:center;padding:24px 18px">
+      ${hasActive ? `
+        <div style="font-size:13px;color:#22A05A;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">🟢 You're On the Clock</div>
+        <div style="font-size:36px;font-weight:800;color:#22A05A;font-variant-numeric:tabular-nums;margin-bottom:4px" id="big-timer">00:00:00</div>
+        <div style="font-size:12px;color:#6E6B64;margin-bottom:16px">Started ${fTime(active.startTime)}</div>
+        <div style="font-size:13px;color:#C8C4BE;margin-bottom:16px">${esc(active.machine)}${active.client?" · "+esc(active.client):""}</div>
+        <button class="btn btn-danger" style="width:100%;padding:14px;font-size:15px" onclick="showClockOff()">⏹ Clock Off</button>
+      ` : `
+        <div style="font-size:13px;color:#6E6B64;margin-bottom:20px">You are not clocked in</div>
+        <button class="btn btn-green" style="width:100%;padding:16px;font-size:16px;border-radius:12px" onclick="openModal('clockin')">▶ Clock In</button>
+      `}
+    </div>
+
+    ${myEntries.length>0?`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:800;color:#F0EDE8">Recent Entries</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="shareAllTime()" style="color:#22A05A;border-color:#1A6B3C40 !important">📤 Share</button>
+          <button class="btn btn-ghost btn-sm" onclick="switchTab('history')">View All</button>
+        </div>
+      </div>
+      ${myEntries.slice(0,3).map(e=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #282828">
+          <div>
+            <div style="font-size:12px;color:#F0EDE8;font-weight:700">${esc(e.machine)}${e.attachment&&e.attachment!=="General Bucket"&&e.attachment!=="None"?" · "+esc(e.attachment):""}</div>
+            <div style="font-size:11px;color:#6E6B64;margin-top:2px">${fDate(e.startTime)} · ${esc(e.client||"—")}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:800;color:#22A05A">${fHrs(e.duration)}</div>
+            ${e.lunchBreak>0?`<div style="font-size:10px;color:#F5C518">☕ ${e.lunchBreak}min lunch</div>`:""}
+          </div>
+        </div>`).join("")}
+    </div>`:""
+  }`;
+}
+
+function renderHistory(){
+  const myEntries=entries.filter(e=>e.crewId===me?.id);
+  if(!myEntries.length) return`<div class="card"><div class="empty"><div class="empty-icon">📋</div><div>No entries yet. Clock in to start logging your hours.</div></div></div>`;
+
+  // Group by week
+  const grouped={};
+  myEntries.forEach(e=>{
+    const d=new Date(e.startTime);
+    const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
+    const key=mon.toDateString();
+    if(!grouped[key]) grouped[key]={label:"Week of "+mon.toLocaleDateString("en-AU",{day:"2-digit",month:"short"}),entries:[],total:0};
+    grouped[key].entries.push(e);
+    grouped[key].total+=e.duration||0;
+  });
+
+  // Build share button header
+  const totalAll=myEntries.reduce((a,e)=>a+(e.duration||0),0);
+  const shareBar=`
+    <div class="card" style="border-color:#1A6B3C40;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Total All Time</div>
+          <div style="font-size:20px;font-weight:800;color:#22A05A">${fHrs(totalAll)}</div>
+        </div>
+        <button class="btn btn-green btn-sm" onclick="shareAllTime()" style="display:flex;align-items:center;gap:6px">
+          📤 Share All Hours
+        </button>
+      </div>
+    </div>`;
+
+  return shareBar + Object.values(grouped).map(wk=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px">
+      <div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase">${wk.label}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:13px;font-weight:800;color:#22A05A">${fHrs(wk.total)}</div>
+        <button onclick="shareWeek('${wk.label}',wk.entries,wk.total)"
+          style="background:#1A6B3C18;border:1px solid #1A6B3C40;border-radius:6px;color:#22A05A;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit">
+          📤 Share
+        </button>
+      </div>
+    </div>
+    ${wk.entries.map(e=>`
+      <div class="entry-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#F0EDE8">${esc(e.machine)}${e.attachment&&e.attachment!=="General Bucket"&&e.attachment!=="None"?" · "+esc(e.attachment):""}</div>
+            <div style="font-size:12px;color:#C8C4BE;margin-top:2px">${esc(e.client||"—")}${e.site?" · "+esc(e.site):""}</div>
+            <div style="font-size:11px;color:#6E6B64;margin-top:3px">${fDate(e.startTime)} · ${fTime(e.startTime)} → ${fTime(e.endTime)}</div>
+            ${e.notes?`<div style="font-size:11px;color:#6E6B64;margin-top:3px;font-style:italic">${esc(e.notes)}</div>`:""}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:15px;font-weight:800;color:#22A05A">${fHrs(e.duration)}</div>
+            ${e.lunchBreak>0?`<div style="font-size:10px;color:#F5C518;margin-top:2px">☕ ${e.lunchBreak}min lunch</div>`:""}
+            <button onclick="deleteEntry('${e.id}')" style="background:none;border:none;color:#6E6B64;font-size:11px;cursor:pointer;margin-top:6px;padding:0">🗑 delete</button>
+          </div>
+        </div>
+      </div>`).join("")}
+  `).join("");
+}
+
+function renderManual(){
+  const today=new Date().toISOString().split("T")[0];
+  const attOpts=ATTACH.map(a=>`<option>${a}</option>`).join("");
+  return `
+    <div class="card">
+      <div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:14px">✎ Log Manual Entry</div>
+      <div class="field"><label>Client / Company *</label>${smartInput("me-client","clients","e.g. South Coast Sand & Civil")}</div>
+      <div class="field"><label>Site / Location</label>${smartInput("me-site","sites","e.g. Goolwa North Stage 1")}</div>
+      <div class="field"><label>Date *</label><input id="me-date" type="date" value="${today}" style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/></div>
+      <div class="field-row">
+        <div class="field"><label>Start Time *</label><input id="me-start" type="time" style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/></div>
+        <div class="field"><label>End Time *</label><input id="me-end" type="time" style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/></div>
+      </div>
+      <div class="field"><label>Machine</label>
+        <select id="me-machine" onchange="meMachineChange()" style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%">
+          ${MACHINES.map(m=>`<option>${m}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field" id="me-attach-wrap"><label>Attachment</label>
+        <select id="me-attach" style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%">${attOpts}</select>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px">Lunch Break</div>
+        <div class="lunch-grid">
+          ${[0,15,20,30,45,60].map(m=>`<button class="lbtn${m===0?" sel":""}" id="melb${m}" onclick="meSelLunch(${m})">${m===0?"No Break":m+"min"}</button>`).join("")}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:#6E6B64;white-space:nowrap">Other:</span>
+          <input type="number" min="0" max="120" placeholder="mins" id="me-lunch-custom"
+            style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:8px 10px;width:76px;font-family:inherit;font-size:13px"
+            onchange="meSelLunchCustom(+this.value)"/>
+          <input type="hidden" id="me-lunch-val" value="0"/>
+          <span style="font-size:11px;color:#6E6B64">mins</span>
+        </div>
+      </div>
+      <div class="field"><label>Notes (optional)</label>${smartInput("me-notes","notes","Any notes about this job")}</div>
+      <button class="btn btn-green" style="width:100%;padding:13px;font-size:15px" onclick="saveManual()">Save Entry</button>
+    </div>`;
+}
+
+// ════════════ MANAGER — CREW MANAGEMENT ════════════
+function getWeekSummaryHTML(){
+  const wkAgo=new Date(Date.now()-7*86400000);
+  const wkEntries=entries.filter(e=>new Date(e.startTime)>=wkAgo);
+  if(!wkEntries.length) return '<div style="color:#6E6B64;font-size:13px">No entries this week</div>';
+  const byWorker={};
+  wkEntries.forEach(e=>{
+    if(!byWorker[e.crewName]) byWorker[e.crewName]=0;
+    byWorker[e.crewName]+=e.duration||0;
+  });
+  return Object.entries(byWorker).map(function(entry){
+    var name=entry[0], hrs=entry[1];
+    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #282828">'
+      +'<span style="color:#F0EDE8;font-size:13px">'+esc(name)+'</span>'
+      +'<span style="color:#22A05A;font-weight:700;font-size:13px">'+fHrs(hrs)+'</span>'
+      +'</div>';
+  }).join("");
+}
+
+function renderManage(){
+  const mgrPin=ld("ae_mgr_pin","0000");
+
+  const memberRows=members.map(m=>{
+    const mEntries=entries.filter(e=>e.crewId===m.id);
+    const wkAgo=new Date(Date.now()-7*86400000);
+    const wkHrs=mEntries.filter(e=>new Date(e.startTime)>=wkAgo).reduce((a,e)=>a+(e.duration||0),0);
+    const totHrs=mEntries.reduce((a,e)=>a+(e.duration||0),0);
+    return `
+      <div style="background:#0D0D0D;border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#F0EDE8">${esc(m.name)}</div>
+            <div style="font-size:11px;color:#6E6B64;margin-top:2px">${esc(m.role||"Operator")} · PIN: ${esc(m.pin)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:#22A05A">${fHrs(wkHrs)} this week</div>
+            <div style="font-size:11px;color:#6E6B64">${fHrs(totHrs)} total · ${mEntries.length} entries</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button onclick="viewWorkerHours('${m.id}')"
+            style="background:#1A6B3C18;border:1px solid #1A6B3C40;border-radius:6px;color:#22A05A;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:inherit">
+            📋 View Hours
+          </button>
+          <button onclick="shareWorkerHours('${m.id}')"
+            style="background:#2878CC18;border:1px solid #2878CC40;border-radius:6px;color:#2878CC;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:inherit">
+            📤 Share Hours
+          </button>
+          <button onclick="editMember('${m.id}')"
+            style="background:#E8580A18;border:1px solid #E8580A40;border-radius:6px;color:#E8580A;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:inherit">
+            ✏️ Edit
+          </button>
+          ${members.length>1?`<button onclick="removeMember('${m.id}')"
+            style="background:#D93B3B18;border:1px solid #D93B3B40;border-radius:6px;color:#D93B3B;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:inherit">
+            🗑 Remove
+          </button>`:""}
+        </div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="card" style="border-color:#E8580A40">
+      <div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:4px">⚙ Manager Panel</div>
+      <div style="font-size:11px;color:#6E6B64;margin-bottom:14px">PIN: ${esc(mgrPin)} · Only you can see this screen</div>
+      <button class="btn btn-green" style="width:100%;margin-bottom:8px" onclick="showAddMember()">+ Add Worker</button>
+      <button onclick="changeManagerPin()"
+        style="background:transparent;border:1px solid #282828;border-radius:8px;color:#6E6B64;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:inherit;width:100%">
+        🔑 Change Manager PIN
+      </button>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:12px">👷 Workers (${members.length})</div>
+      ${memberRows}
+    </div>
+
+    <div class="card" style="border-color:#2878CC40">
+      <div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:12px">📊 All Hours This Week</div>
+      ${getWeekSummaryHTML()}
+    </div>`;
+}
+
+function showAddMember(){
+  const overlay=document.getElementById("overlay");
+  document.getElementById("modal-title").textContent="+ Add Worker";
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("modal-body").innerHTML=`
+    <div class="field"><label>Full Name *</label>
+      <input id="nm-name" placeholder="e.g. John Smith"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div class="field"><label>Role</label>
+      <input id="nm-role" placeholder="e.g. Excavator Operator" value="Operator"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div class="field"><label>PIN (4 digits) *</label>
+      <input id="nm-pin" type="number" placeholder="e.g. 5678" maxlength="4"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+      <div style="font-size:11px;color:#6E6B64;margin-top:4px">Each worker needs a unique 4-digit PIN to clock in</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-green" style="flex:1" onclick="addMember()">Add Worker</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`;
+}
+
+function addMember(){
+  const name=document.getElementById("nm-name").value.trim();
+  const role=document.getElementById("nm-role").value.trim()||"Operator";
+  const pin=String(document.getElementById("nm-pin").value).trim();
+  if(!name){toast("Please enter a name","error");return;}
+  if(!pin||pin.length!==4||isNaN(pin)){toast("PIN must be exactly 4 digits","error");return;}
+  if(members.some(m=>m.pin===pin)){toast("That PIN is already in use","error");return;}
+  const mgPin=ld("ae_mgr_pin","0000");
+  if(pin===mgPin){toast("Cannot use the manager PIN","error");return;}
+  members.push({id:uid(),name,role,pin});
+  saveAll(); closeModal(); render();
+  toast(name+" added ✅");
+}
+
+function editMember(id){
+  const m=members.find(x=>x.id===id);
+  if(!m) return;
+  document.getElementById("modal-title").textContent="✏️ Edit Worker";
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("modal-body").innerHTML=`
+    <div class="field"><label>Full Name *</label>
+      <input id="em-name" value="${esc(m.name)}"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div class="field"><label>Role</label>
+      <input id="em-role" value="${esc(m.role||"Operator")}"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div class="field"><label>PIN (4 digits)</label>
+      <input id="em-pin" type="number" value="${esc(m.pin)}"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-green" style="flex:1" onclick="saveMember('${m.id}')">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`;
+}
+
+function saveMember(id){
+  const name=document.getElementById("em-name").value.trim();
+  const role=document.getElementById("em-role").value.trim()||"Operator";
+  const pin=String(document.getElementById("em-pin").value).trim();
+  if(!name){toast("Please enter a name","error");return;}
+  if(!pin||pin.length!==4||isNaN(pin)){toast("PIN must be exactly 4 digits","error");return;}
+  const conflict=members.find(m=>m.pin===pin&&m.id!==id);
+  if(conflict){toast("That PIN is already used by "+conflict.name,"error");return;}
+  const mgPin=ld("ae_mgr_pin","0000");
+  if(pin===mgPin){toast("Cannot use the manager PIN","error");return;}
+  members=members.map(m=>m.id===id?{...m,name,role,pin}:m);
+  saveAll(); closeModal(); render();
+  toast("Worker updated ✅");
+}
+
+function removeMember(id){
+  const m=members.find(x=>x.id===id);
+  if(!m||!confirm("Remove "+m.name+"? Their logged hours will be kept.")) return;
+  members=members.filter(x=>x.id!==id);
+  saveAll(); render(); toast(m.name+" removed");
+}
+
+function changeManagerPin(){
+  document.getElementById("modal-title").textContent="🔑 Change Manager PIN";
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("modal-body").innerHTML=`
+    <div style="font-size:13px;color:#C8C4BE;margin-bottom:14px">
+      The manager PIN gives access to add, edit, and remove workers. Keep it private.
+    </div>
+    <div class="field"><label>New Manager PIN (4 digits)</label>
+      <input id="mgr-pin-new" type="number" placeholder="e.g. 9999"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div class="field"><label>Confirm PIN</label>
+      <input id="mgr-pin-confirm" type="number" placeholder="Repeat the PIN"
+        style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-green" style="flex:1" onclick="saveMgrPin()">Save Manager PIN</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`;
+}
+
+function saveMgrPin(){
+  const p1=String(document.getElementById("mgr-pin-new").value).trim();
+  const p2=String(document.getElementById("mgr-pin-confirm").value).trim();
+  if(!p1||p1.length!==4||isNaN(p1)){toast("PIN must be exactly 4 digits","error");return;}
+  if(p1!==p2){toast("PINs do not match","error");return;}
+  if(members.some(m=>m.pin===p1)){toast("That PIN is already used by a worker","error");return;}
+  sv("ae_mgr_pin",p1);
+  closeModal(); render();
+  toast("Manager PIN updated ✅");
+}
+
+function viewWorkerHours(crewId){
+  const m=members.find(x=>x.id===crewId);
+  if(!m) return;
+  const wEntries=entries.filter(e=>e.crewId===crewId);
+  if(!wEntries.length){toast(m.name+" has no hours logged yet","error");return;}
+  const total=wEntries.reduce((a,e)=>a+(e.duration||0),0);
+  const wkAgo=new Date(Date.now()-7*86400000);
+  const wkHrs=wEntries.filter(e=>new Date(e.startTime)>=wkAgo).reduce((a,e)=>a+(e.duration||0),0);
+
+  document.getElementById("modal-title").textContent="📋 "+m.name+"'s Hours";
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("modal-body").innerHTML=`
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="flex:1;background:#0D0D0D;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">This Week</div>
+        <div style="font-size:22px;font-weight:800;color:#22A05A">${fHrs(wkHrs)}</div>
+      </div>
+      <div style="flex:1;background:#0D0D0D;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">All Time</div>
+        <div style="font-size:22px;font-weight:800;color:#E8580A">${fHrs(total)}</div>
+      </div>
+    </div>
+    <div style="max-height:320px;overflow-y:auto">
+      ${wEntries.slice(0,20).map(e=>`
+        <div style="padding:10px 0;border-bottom:1px solid #282828">
+          <div style="display:flex;justify-content:space-between">
+            <div>
+              <div style="font-size:12px;color:#F0EDE8;font-weight:700">${fDate(e.startTime)}</div>
+              <div style="font-size:11px;color:#6E6B64">${esc(e.machine)}${e.client?" · "+esc(e.client):""}${e.site?" · "+esc(e.site):""}</div>
+              <div style="font-size:11px;color:#6E6B64">${fTime(e.startTime)} → ${fTime(e.endTime)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:14px;font-weight:800;color:#22A05A">${fHrs(e.duration)}</div>
+              ${e.lunchBreak>0?`<div style="font-size:10px;color:#F5C518">☕ ${e.lunchBreak}min</div>`:""}
+            </div>
+          </div>
+        </div>`).join("")}
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-green" style="flex:1" onclick="shareWorkerHours('${crewId}');closeModal()">📤 Share These Hours</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    </div>`;
+}
+
+function shareWorkerHours(crewId){
+  const m=members.find(x=>x.id===crewId);
+  if(!m) return;
+  const wEntries=entries.filter(e=>e.crewId===crewId);
+  if(!wEntries.length){toast("No hours logged yet","error");return;}
+  const total=wEntries.reduce((a,e)=>a+(e.duration||0),0);
+  const lines=[
+    "━━━━━━━━━━━━━━━━━━━━━━━",
+    "ANGEL EARTHWORKS & CIVIL",
+    "Hours Summary — "+m.name,
+    new Date().toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"}),
+    "━━━━━━━━━━━━━━━━━━━━━━━",""
+  ];
+  wEntries.forEach((e,i)=>{
+    lines.push((i+1)+". "+fDate(e.startTime)+" "+fTime(e.startTime)+"–"+fTime(e.endTime));
+    lines.push("   "+esc2(e.machine)+(e.client?" | "+esc2(e.client):"")+(e.site?" | "+esc2(e.site):""));
+    lines.push("   Billable: "+fHrs(e.duration)+(e.lunchBreak>0?" (excl. "+e.lunchBreak+"min lunch)":""));
+    lines.push("");
+  });
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("TOTAL: "+fHrs(total));
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  const text=lines.join("
+");
+  if(navigator.share){
+    navigator.share({title:"Hours — "+m.name,text}).then(()=>toast("Shared ✅")).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>toast("Copied to clipboard")).catch(()=>showShareText(text));
+  }
+}
+
+// ════════════ SHARE TIMESHEET ════════════
+function shareWeek(weekLabel, weekEntries, weekTotal){
+  // Build plain text summary
+  const name=me?.name||"Crew Member";
+  const lines=[
+    "━━━━━━━━━━━━━━━━━━━━━━━",
+    "ANGEL EARTHWORKS & CIVIL",
+    "Timesheet — "+name,
+    weekLabel,
+    "━━━━━━━━━━━━━━━━━━━━━━━",
+    ""
+  ];
+  weekEntries.forEach((e,i)=>{
+    lines.push((i+1)+". "+fDate(e.startTime));
+    lines.push("   "+esc2(e.machine)+(e.attachment&&e.attachment!=="General Bucket"&&e.attachment!=="None"?" ("+esc2(e.attachment)+")":""));
+    if(e.client) lines.push("   Client: "+esc2(e.client));
+    if(e.site)   lines.push("   Site: "+esc2(e.site));
+    lines.push("   Time: "+fTime(e.startTime)+" → "+fTime(e.endTime));
+    if(e.lunchBreak>0) lines.push("   Lunch: "+e.lunchBreak+"min deducted");
+    lines.push("   Hours: "+fHrs(e.duration));
+    if(e.notes)  lines.push("   Notes: "+esc2(e.notes));
+    lines.push("");
+  });
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("TOTAL: "+fHrs(weekTotal));
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("Sent via Angel Earthworks Crew App");
+
+  const text=lines.join("\n");
+
+  // Use native share if available (works great on mobile)
+  if(navigator.share){
+    navigator.share({
+      title:"Timesheet — "+name+" — "+weekLabel,
+      text:text
+    }).then(()=>toast("Timesheet shared ✅")).catch(()=>{});
+  } else {
+    // Fallback: copy to clipboard
+    navigator.clipboard.writeText(text).then(()=>{
+      toast("Timesheet copied to clipboard — paste into WhatsApp or SMS");
+    }).catch(()=>{
+      // Last resort: show in a textarea to copy manually
+      showShareText(text);
+    });
+  }
+}
+
+function shareAllTime(){
+  const myEntries=entries.filter(e=>e.crewId===me?.id);
+  if(!myEntries.length){toast("No entries to share","error");return;}
+  const name=me?.name||"Crew Member";
+  const total=myEntries.reduce((a,e)=>a+(e.duration||0),0);
+
+  // Group by week for full summary
+  const grouped={};
+  myEntries.forEach(e=>{
+    const d=new Date(e.startTime);
+    const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
+    const key=mon.toDateString();
+    if(!grouped[key]) grouped[key]={label:"Week of "+mon.toLocaleDateString("en-AU",{day:"2-digit",month:"short"}),entries:[],total:0};
+    grouped[key].entries.push(e);
+    grouped[key].total+=e.duration||0;
+  });
+
+  const lines=[
+    "━━━━━━━━━━━━━━━━━━━━━━━",
+    "ANGEL EARTHWORKS & CIVIL",
+    "Full Timesheet — "+name,
+    new Date().toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"}),
+    "━━━━━━━━━━━━━━━━━━━━━━━",
+    ""
+  ];
+
+  Object.values(grouped).forEach(wk=>{
+    lines.push("📅 "+wk.label+" — "+fHrs(wk.total));
+    wk.entries.forEach(e=>{
+      lines.push("  • "+fDate(e.startTime)+" "+fTime(e.startTime)+"–"+fTime(e.endTime)+" | "+esc2(e.machine)+(e.client?" | "+esc2(e.client):"")+" | "+fHrs(e.duration)+(e.lunchBreak>0?" ("+e.lunchBreak+"min lunch)":""));
+    });
+    lines.push("");
+  });
+
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("GRAND TOTAL: "+fHrs(total));
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+
+  const text=lines.join("\n");
+
+  if(navigator.share){
+    navigator.share({title:"Full Timesheet — "+name, text}).then(()=>toast("Timesheet shared ✅")).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>{
+      toast("Copied to clipboard — paste into WhatsApp or SMS");
+    }).catch(()=>showShareText(text));
+  }
+}
+
+function showShareText(text){
+  // Fallback modal with text to copy manually
+  const overlay=document.getElementById("overlay");
+  const title=document.getElementById("modal-title");
+  const body=document.getElementById("modal-body");
+  overlay.classList.add("open");
+  title.textContent="📋 Copy Your Timesheet";
+  body.innerHTML=`
+    <div style="font-size:12px;color:#6E6B64;margin-bottom:12px">
+      Press and hold the text below, select all, then copy and paste into WhatsApp or SMS.
+    </div>
+    <textarea readonly onclick="this.select()"
+      style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;
+             padding:12px;width:100%;height:320px;font-size:11px;line-height:1.6;
+             font-family:'Courier New',monospace;resize:none"
+    >${text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</textarea>
+    <button class="btn btn-green" style="width:100%;margin-top:12px" onclick="closeModal()">Done</button>`;
+}
+
+// esc2 — plain text version (no HTML encoding)
+const esc2=s=>String(s||"");
+
+// Big timer in clock tab
+setInterval(()=>{
+  const bt=document.getElementById("big-timer");
+  if(bt&&active&&active.crewId===me?.id){
+    const el=Math.floor((Date.now()-new Date(active.startTime).getTime())/1000);
+    const h=Math.floor(el/3600),m=Math.floor((el%3600)/60),s=el%60;
+    bt.textContent=String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  }
+},1000);
+
+function resetApp(){
+  if(!confirm("Reset all app data? This will clear all PINs and entries. Only do this if you are locked out.")) return;
+  localStorage.removeItem("ae_crew_pins");
+  localStorage.removeItem("ae_crew_entries");
+  localStorage.removeItem("ae_crew_active");
+  localStorage.removeItem("ae_mgr_pin");
+  localStorage.removeItem("ae_history");
+  members=[{id:"default",name:"Crew Member",pin:"1234",role:"Operator"}];
+  entries=[]; active=null; me=null;
+  document.getElementById("pin-err").textContent="App reset. Manager PIN: 0000";
+  pin=""; updDots();
+}
+
+// Escape key
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+</script>
+</body>
+</html>
