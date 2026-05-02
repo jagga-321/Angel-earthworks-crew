@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AE Crew"/>
+<meta name="theme-color" content="#1A6B3C"/>
+<title>Angel Earthworks — Crew</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{background:#0D0D0D;color:#F0EDE8;font-family:'Courier New',monospace;min-height:100vh;font-size:14px}
+input,select,textarea,button{font-family:inherit;font-size:14px;outline:none}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=time]::-webkit-calendar-picker-indicator{filter:invert(.5)}
+select option{background:#1a1a1a;color:#F0EDE8}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* Pages */
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+
+/* PIN page */
+#pin-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
+.pin-dots{display:flex;justify-content:center;margin:20px 0}
+.dot{width:14px;height:14px;border-radius:50%;background:#282828;margin:0 8px;transition:background .15s}
+.dot.on{background:#22A05A}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;width:100%;margin-top:8px}
+.pin-btn{background:#1C1C1C;border:1px solid #282828;border-radius:12px;color:#F0EDE8;font-size:22px;font-weight:700;padding:16px;cursor:pointer}
+.pin-btn:active{background:#2A2A2A}
+
+/* Header */
+#app-header{background:#141414;border-bottom:1px solid #282828;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+
+/* Banner */
+#clock-banner{background:linear-gradient(90deg,#0A2218,#0D2010);border-bottom:1px solid #1A6B3C40;padding:10px 16px;display:none;justify-content:space-between;align-items:center}
+
+/* Nav */
+#app-nav{background:#141414;border-bottom:1px solid #282828;display:flex;overflow-x:auto;padding:0 4px}
+.tab-btn{background:none;border:none;color:#6E6B64;padding:11px 14px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap}
+.tab-btn.on{color:#22A05A;border-bottom-color:#22A05A}
+
+/* Content */
+#app-content{padding:14px 14px 80px;max-width:600px;margin:0 auto}
+
+/* Cards */
+.card{background:#1C1C1C;border:1px solid #282828;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+
+/* Buttons */
+.btn{border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;font-size:13px;padding:10px 18px;border:none;white-space:nowrap}
+.btn-green{background:#1A6B3C;color:#fff}
+.btn-ghost{background:transparent;color:#6E6B64;border:1px solid #282828}
+.btn-red{background:#D93B3B18;color:#D93B3B;border:1px solid #D93B3B35}
+.btn-blue{background:#2878CC18;color:#2878CC;border:1px solid #2878CC35}
+.btn-orange{background:#E8580A18;color:#E8580A;border:1px solid #E8580A35}
+.btn-sm{font-size:11px;padding:6px 12px}
+.btn-full{width:100%;padding:13px;font-size:15px}
+
+/* Form */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:10px;font-weight:700;color:#6E6B64;letter-spacing:1.2px;text-transform:uppercase}
+.field input,.field select,.field textarea{background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:10px 12px;width:100%}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
+
+/* Stats */
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:#1C1C1C;border:1px solid #282828;border-radius:12px;padding:14px 16px;flex:1 1 100px;text-align:center}
+.stat-label{font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.stat-value{font-size:20px;font-weight:800}
+
+/* Lunch buttons */
+.lunch-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.lb{background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;font-size:12px;font-weight:700;padding:10px 4px;cursor:pointer;font-family:inherit;text-align:center}
+.lb.on{background:#1A6B3C;border-color:#22A05A;color:#fff}
+
+/* Modal */
+#modal-bg{position:fixed;inset:0;background:#000b;z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+#modal-bg.open{display:flex}
+.modal{background:#141414;border:1px solid #333;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:800;color:#F0EDE8;margin-bottom:18px}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:999;box-shadow:0 4px 24px #0008;white-space:nowrap;display:none;animation:fadeUp .2s ease}
+
+/* Timer */
+#timer-badge{display:none;background:#22A05A18;border:1px solid #22A05A40;border-radius:8px;padding:5px 12px;align-items:center;gap:8px}
+#timer-text{font-variant-numeric:tabular-nums;color:#22A05A;font-weight:800;font-size:15px}
+.blink{animation:blink 1.4s infinite}
+
+.empty{text-align:center;padding:32px 20px;color:#6E6B64}
+.entry-row{padding:10px 0;border-bottom:1px solid #282828}
+.shake{animation:shake .3s}
+</style>
+</head>
+<body>
+
+<!-- PIN PAGE -->
+<div id="pin-page">
+  <div style="margin-bottom:24px">
+    <div style="font-size:11px;font-weight:800;color:#22A05A;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">⛏ Angel Earthworks</div>
+    <div style="font-size:22px;font-weight:800;color:#F0EDE8;margin-bottom:6px">Crew Timesheet</div>
+    <div style="font-size:12px;color:#6E6B64">Enter your PIN</div>
+  </div>
+
+  <div class="pin-dots">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+  </div>
+
+  <div id="pin-msg" style="font-size:12px;color:#D93B3B;min-height:18px;margin-bottom:10px"></div>
+
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pd('1')">1</button>
+    <button class="pin-btn" onclick="pd('2')">2</button>
+    <button class="pin-btn" onclick="pd('3')">3</button>
+    <button class="pin-btn" onclick="pd('4')">4</button>
+    <button class="pin-btn" onclick="pd('5')">5</button>
+    <button class="pin-btn" onclick="pd('6')">6</button>
+    <button class="pin-btn" onclick="pd('7')">7</button>
+    <button class="pin-btn" onclick="pd('8')">8</button>
+    <button class="pin-btn" onclick="pd('9')">9</button>
+    <button class="pin-btn" style="font-size:13px;color:#6E6B64" onclick="pclr()">Clear</button>
+    <button class="pin-btn" onclick="pd('0')">0</button>
+    <button class="pin-btn" style="font-size:17px;color:#6E6B64" onclick="pbk()">⌫</button>
+  </div>
+
+  <div style="margin-top:18px;font-size:11px;color:#6E6B64;line-height:1.8">
+    Worker PIN: <strong style="color:#C8C4BE">1234</strong> &nbsp;|&nbsp;
+    Manager PIN: <strong style="color:#C8C4BE">0000</strong>
+  </div>
+  <button onclick="doReset()" style="margin-top:14px;background:none;border:none;color:#2A2A2A;font-size:10px;cursor:pointer;font-family:inherit;text-decoration:underline">Reset app</button>
+</div>
+
+<!-- APP PAGE -->
+<div id="app-page" style="display:none">
+
+  <div id="app-header">
+    <div>
+      <div style="font-size:11px;font-weight:800;color:#22A05A;letter-spacing:2px;text-transform:uppercase">⛏ AE Crew</div>
+      <div id="who-label" style="font-size:13px;color:#F0EDE8;font-weight:700;margin-top:1px"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div id="timer-badge">
+        <span class="blink" style="width:7px;height:7px;border-radius:50%;background:#22A05A;display:inline-block"></span>
+        <span id="timer-text">00:00:00</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLock()">🔒 Lock</button>
+    </div>
+  </div>
+
+  <div id="clock-banner">
+    <div>
+      <div style="font-size:10px;color:#22A05A;font-weight:700;letter-spacing:1px;text-transform:uppercase">🟢 On the Clock</div>
+      <div id="banner-info" style="font-size:13px;color:#C8C4BE;margin-top:2px"></div>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="showClockOff()">⏹ Clock Off</button>
+  </div>
+
+  <div id="app-nav">
+    <button class="tab-btn on" id="tab-clock"   onclick="goTab('clock')">🕐 Clock</button>
+    <button class="tab-btn"    id="tab-history" onclick="goTab('history')">📋 My Hours</button>
+    <button class="tab-btn"    id="tab-manual"  onclick="goTab('manual')">✎ Manual</button>
+    <button class="tab-btn"    id="tab-manage"  onclick="goTab('manage')" style="display:none">⚙ Manage</button>
+  </div>
+
+  <div id="app-content"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg" onclick="bgClick(event)">
+  <div class="modal" id="modal-box">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════
+function gl(k,d){try{var v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
+function sl(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+var members = gl("ae_pins",[{id:"w1",name:"Crew Member",pin:"1234",role:"Operator"}]);
+var entries = gl("ae_ents",[]);
+var clocked = gl("ae_clocked",null);
+var hist    = gl("ae_hist",{clients:[],sites:[],notes:[]});
+
+var WHO = null;   // logged in member object
+var TAB = "clock";
+var TIMER_ID = null;
+var LUNCH = 0;
+
+function saveAll(){
+  sl("ae_pins",members);
+  sl("ae_ents",entries);
+  sl("ae_clocked",clocked);
+  sl("ae_hist",hist);
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+var uid=function(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);};
+function fDate(d){if(!d)return"—";return new Date(d).toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"});}
+function fTime(d){if(!d)return"—";return new Date(d).toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"});}
+function fHrs(h){if(!h||h<=0)return"0h 0m";var hh=Math.floor(h),mm=Math.round((h-hh)*60);return mm>0?hh+"h "+mm+"m":hh+"h";}
+function he(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function toast(msg,type){
+  var t=document.getElementById("toast");
+  t.textContent=msg;
+  t.style.background=(type==="err")?"#D93B3B":"#1A6B3C";
+  t.style.display="block";
+  setTimeout(function(){t.style.display="none";},2800);
+}
+
+function addHist(type,val){
+  if(!val||!val.trim())return;
+  val=val.trim();
+  if(!hist[type])hist[type]=[];
+  hist[type]=hist[type].filter(function(v){return v!==val;});
+  hist[type].unshift(val);
+  if(hist[type].length>15)hist[type]=hist[type].slice(0,15);
+  sl("ae_hist",hist);
+}
+
+// ══════════════════════════════════════════
+// PIN
+// ══════════════════════════════════════════
+var PIN="";
+function pd(d){if(PIN.length>=4)return;PIN+=d;drawDots();if(PIN.length===4)setTimeout(checkPIN,150);}
+function pbk(){PIN=PIN.slice(0,-1);drawDots();document.getElementById("pin-msg").textContent="";}
+function pclr(){PIN="";drawDots();document.getElementById("pin-msg").textContent="";}
+function drawDots(){for(var i=0;i<4;i++){var el=document.getElementById("d"+i);if(el)el.className="dot"+(i<PIN.length?" on":"");}}
+
+function checkPIN(){
+  var mgrPin=gl("ae_mgr","0000");
+
+  if(PIN===mgrPin){
+    PIN="";drawDots();
+    WHO={id:"__mgr__",name:"Manager",role:"Manager"};
+    TAB="manage";
+    openApp();
+    return;
+  }
+
+  var found=null;
+  for(var i=0;i<members.length;i++){
+    if(members[i].pin===PIN){found=members[i];break;}
+  }
+
+  if(found){
+    WHO=found;
+    TAB="clock";
+    PIN="";drawDots();
+    openApp();
+  } else {
+    document.getElementById("pin-msg").textContent="Wrong PIN — try again";
+    var dots=document.getElementById("pin-dots");
+    if(dots){dots.className="pin-dots shake";setTimeout(function(){dots.className="pin-dots";},350);}
+    PIN="";drawDots();
+  }
+}
+
+function openApp(){
+  document.getElementById("pin-page").style.display="none";
+  document.getElementById("app-page").style.display="block";
+  document.getElementById("who-label").textContent=WHO.name;
+
+  // Show/hide tabs
+  var isM=(WHO.id==="__mgr__");
+  document.getElementById("tab-clock").style.display=isM?"none":"block";
+  document.getElementById("tab-history").style.display=isM?"none":"block";
+  document.getElementById("tab-manual").style.display=isM?"none":"block";
+  document.getElementById("tab-manage").style.display=isM?"block":"none";
+
+  // Restore active session display
+  if(clocked && !isM && clocked.memberId===WHO.id){
+    showBanner();
+    startTimer();
+  }
+
+  drawTab();
+  toast("Welcome "+WHO.name+" 👋");
+}
+
+function doLock(){
+  if(clocked&&!confirm("Session is running. Lock anyway?"))return;
+  WHO=null;
+  stopTimer();
+  document.getElementById("pin-page").style.display="flex";
+  document.getElementById("app-page").style.display="none";
+  document.getElementById("clock-banner").style.display="none";
+  document.getElementById("timer-badge").style.display="none";
+}
+
+function doReset(){
+  if(!confirm("Reset ALL app data? This clears everything and resets PINs."))return;
+  localStorage.removeItem("ae_pins");
+  localStorage.removeItem("ae_ents");
+  localStorage.removeItem("ae_clocked");
+  localStorage.removeItem("ae_hist");
+  localStorage.removeItem("ae_mgr");
+  members=[{id:"w1",name:"Crew Member",pin:"1234",role:"Operator"}];
+  entries=[];clocked=null;hist={clients:[],sites:[],notes:[]};WHO=null;
+  document.getElementById("pin-msg").textContent="Reset done. Manager: 0000";
+  PIN="";drawDots();
+}
+
+// ══════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════
+function startTimer(){
+  stopTimer();
+  TIMER_ID=setInterval(function(){
+    if(!clocked)return;
+    var el=Math.floor((Date.now()-new Date(clocked.start).getTime())/1000);
+    var h=Math.floor(el/3600),m=Math.floor((el%3600)/60),s=el%60;
+    var txt=pad(h)+":"+pad(m)+":"+pad(s);
+    var el2=document.getElementById("timer-text");
+    if(el2)el2.textContent=txt;
+    var bt=document.getElementById("big-timer");
+    if(bt)bt.textContent=txt;
+  },1000);
+}
+function stopTimer(){if(TIMER_ID){clearInterval(TIMER_ID);TIMER_ID=null;}}
+function pad(n){return String(n).padStart(2,"0");}
+
+function showBanner(){
+  if(!clocked)return;
+  var bn=document.getElementById("clock-banner");
+  var tb=document.getElementById("timer-badge");
+  bn.style.display="flex";
+  tb.style.display="flex";
+  var bi=document.getElementById("banner-info");
+  if(bi)bi.textContent=clocked.machine+(clocked.client?" · "+clocked.client:"")+(clocked.site?" · "+clocked.site:"");
+}
+function hideBanner(){
+  document.getElementById("clock-banner").style.display="none";
+  document.getElementById("timer-badge").style.display="none";
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function goTab(t){
+  TAB=t;
+  var tabs=["clock","history","manual","manage"];
+  for(var i=0;i<tabs.length;i++){
+    var btn=document.getElementById("tab-"+tabs[i]);
+    if(btn)btn.className="tab-btn"+(tabs[i]===t?" on":"");
+  }
+  drawTab();
+}
+
+function drawTab(){
+  var el=document.getElementById("app-content");
+  if(!el)return;
+  if(TAB==="clock")  el.innerHTML=buildClock();
+  if(TAB==="history")el.innerHTML=buildHistory();
+  if(TAB==="manual") el.innerHTML=buildManual();
+  if(TAB==="manage") el.innerHTML=buildManage();
+}
+
+// ══════════════════════════════════════════
+// CLOCK TAB
+// ══════════════════════════════════════════
+function buildClock(){
+  var myE=[];
+  for(var i=0;i<entries.length;i++){if(entries[i].memberId===WHO.id)myE.push(entries[i]);}
+  var wkAgo=Date.now()-7*86400000;
+  var wkHrs=0,todHrs=0,totHrs=0;
+  var todStr=new Date().toDateString();
+  for(var i=0;i<myE.length;i++){
+    var dur=myE[i].dur||0;
+    totHrs+=dur;
+    if(new Date(myE[i].start).getTime()>=wkAgo)wkHrs+=dur;
+    if(new Date(myE[i].start).toDateString()===todStr)todHrs+=dur;
+  }
+  var isOn=clocked&&clocked.memberId===WHO.id;
+
+  var html='<div class="stats" style="margin-top:4px">'
+    +'<div class="stat"><div class="stat-label">Today</div><div class="stat-value" style="color:#22A05A">'+fHrs(todHrs)+'</div></div>'
+    +'<div class="stat"><div class="stat-label">This Week</div><div class="stat-value" style="color:#F5C518">'+fHrs(wkHrs)+'</div></div>'
+    +'<div class="stat"><div class="stat-label">All Time</div><div class="stat-value" style="color:#E8580A">'+fHrs(totHrs)+'</div></div>'
+    +'</div>';
+
+  html+='<div class="card" style="text-align:center;padding:24px 18px">';
+  if(isOn){
+    html+='<div style="font-size:13px;color:#22A05A;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">🟢 On the Clock</div>';
+    html+='<div id="big-timer" style="font-size:36px;font-weight:800;color:#22A05A;font-variant-numeric:tabular-nums;margin-bottom:4px">00:00:00</div>';
+    html+='<div style="font-size:12px;color:#6E6B64;margin-bottom:16px">Started '+fTime(clocked.start)+'</div>';
+    html+='<button class="btn btn-red btn-full" onclick="showClockOff()">⏹ Clock Off</button>';
+  } else {
+    html+='<div style="font-size:13px;color:#6E6B64;margin-bottom:20px">You are not clocked in</div>';
+    html+='<button class="btn btn-green btn-full" onclick="showClockIn()">▶ Clock In</button>';
+  }
+  html+='</div>';
+
+  if(myE.length>0){
+    html+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +'<div style="font-size:13px;font-weight:800;color:#F0EDE8">Recent Entries</div>'
+      +'<button class="btn btn-ghost btn-sm" onclick="goTab(\'history\')">View All</button>'
+      +'</div>';
+    var show=myE.slice(0,3);
+    for(var i=0;i<show.length;i++){
+      var e=show[i];
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #282828">'
+        +'<div><div style="font-size:12px;color:#F0EDE8;font-weight:700">'+he(e.machine)+'</div>'
+        +'<div style="font-size:11px;color:#6E6B64;margin-top:2px">'+fDate(e.start)+(e.client?" · "+he(e.client):"")+'</div></div>'
+        +'<div style="font-size:14px;font-weight:800;color:#22A05A">'+fHrs(e.dur)+'</div>'
+        +'</div>';
+    }
+    html+='</div>';
+  }
+  return html;
+}
+
+// ══════════════════════════════════════════
+// CLOCK IN MODAL
+// ══════════════════════════════════════════
+function showClockIn(){
+  if(clocked){toast("Already clocked in","err");return;}
+  openModal("▶ Clock In");
+  var attOpts="";
+  var atts=["General Bucket","Trenching Bucket","Auger","Rock Breaker","Tilt Bucket","Clean-up Bucket"];
+  for(var i=0;i<atts.length;i++)attOpts+='<option>'+atts[i]+'</option>';
+  var machOpts="";
+  var machs=["Hitachi ZX55U","Hino 700","Both"];
+  for(var i=0;i<machs.length;i++)machOpts+='<option>'+machs[i]+'</option>';
+
+  var clientOpts=buildDatalist("dl-clients",hist.clients||[]);
+  var siteOpts=buildDatalist("dl-sites",hist.sites||[]);
+
+  document.getElementById("modal-body").innerHTML=
+    clientOpts+siteOpts+
+    '<div class="field"><label>Client</label><input id="ci-client" list="dl-clients" placeholder="e.g. South Coast Sand & Civil"/></div>'+
+    '<div class="field"><label>Site</label><input id="ci-site" list="dl-sites" placeholder="e.g. Goolwa North Stage 1"/></div>'+
+    '<div class="field"><label>Machine</label><select id="ci-machine" onchange="ciMachChange()">'+machOpts+'</select></div>'+
+    '<div class="field" id="ci-att-f"><label>Attachment</label><select id="ci-attach">'+attOpts+'</select></div>'+
+    '<div class="field"><label>Notes (optional)</label><input id="ci-notes" placeholder="Any notes"/></div>'+
+    '<div style="display:flex;gap:10px;margin-top:4px">'+
+    '<button class="btn btn-green" style="flex:1" onclick="doClockIn()">▶ Start Clock</button>'+
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'+
+    '</div>';
+}
+
+function buildDatalist(id,items){
+  var html='<datalist id="'+id+'">';
+  for(var i=0;i<items.length;i++)html+='<option value="'+he(items[i])+'"/>';
+  html+='</datalist>';
+  return html;
+}
+
+function ciMachChange(){
+  var m=document.getElementById("ci-machine");
+  var f=document.getElementById("ci-att-f");
+  if(m&&f)f.style.display=(m.value==="Hino 700")?"none":"block";
+}
+
+function doClockIn(){
+  var client=(document.getElementById("ci-client")||{}).value||"";
+  var site=(document.getElementById("ci-site")||{}).value||"";
+  var machine=(document.getElementById("ci-machine")||{}).value||"Hitachi ZX55U";
+  var attach=machine!=="Hino 700"?((document.getElementById("ci-attach")||{}).value||"General Bucket"):"";
+  var notes=(document.getElementById("ci-notes")||{}).value||"";
+  addHist("clients",client);addHist("sites",site);
+  clocked={memberId:WHO.id,memberName:WHO.name,client:client.trim(),site:site.trim(),machine:machine,attachment:attach,notes:notes.trim(),start:new Date().toISOString()};
+  saveAll();showBanner();startTimer();closeModal();
+  drawTab();toast("Clocked in ✅");
+}
+
+// ══════════════════════════════════════════
+// CLOCK OFF MODAL
+// ══════════════════════════════════════════
+function showClockOff(){
+  if(!clocked)return;
+  LUNCH=0;
+  var endT=new Date().toISOString();
+  var raw=(new Date(endT)-new Date(clocked.start))/3600000;
+  window._stopEnd=endT;
+  window._stopRaw=raw;
+  openModal("⏹ Clock Off");
+
+  var html='<div style="background:#0D0D0D;border-radius:10px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Your Session</div>'
+    +'<div style="font-size:13px;color:#F0EDE8">'+he(clocked.machine)+(clocked.attachment&&clocked.attachment!=="General Bucket"?" · "+he(clocked.attachment):"")+'</div>'
+    +(clocked.client?'<div style="font-size:12px;color:#6E6B64;margin-top:2px">'+he(clocked.client)+(clocked.site?" · "+he(clocked.site):"")+'</div>':"")
+    +'<div style="font-size:11px;color:#6E6B64;margin-top:4px">'+fTime(clocked.start)+" → "+fTime(endT)+'</div>'
+    +'<div style="font-size:15px;color:#22A05A;font-weight:700;margin-top:8px">On clock: '+fHrs(raw)+'</div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Lunch Break?</div>'
+    +'<div class="lunch-row">';
+  var lbs=[0,15,20,30,45,60];
+  for(var i=0;i<lbs.length;i++){
+    html+='<button class="lb'+(lbs[i]===0?" on":"")+'" id="lb'+lbs[i]+'" onclick="selLunch('+lbs[i]+')">'+
+      (lbs[i]===0?"No Break":lbs[i]+"min")+'</button>';
+  }
+  html+='</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">'
+    +'<span style="font-size:11px;color:#6E6B64;white-space:nowrap">Other:</span>'
+    +'<input type="number" id="lunch-other" min="0" max="120" placeholder="mins" onchange="selLunchOther(this.value)"'
+    +' style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:8px 10px;width:80px;font-family:inherit;font-size:13px"/>'
+    +'<span style="font-size:11px;color:#6E6B64">mins</span>'
+    +'</div>'
+    +'<div style="background:#0D0D0D;border-radius:10px;padding:14px;margin-bottom:14px">'
+    +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="color:#6E6B64">On clock</span><span>'+fHrs(raw)+'</span></div>'
+    +'<div id="lunch-deduct" style="display:none;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="color:#6E6B64">Less lunch</span><span style="color:#D93B3B" id="lunch-deduct-val"></span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1px solid #282828;padding-top:10px">'
+    +'<span style="color:#6E6B64">Billable</span><span style="color:#22A05A" id="billable-val">'+fHrs(raw)+'</span></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button class="btn btn-green" style="flex:1" onclick="doClockOff()">✅ Save</button>'
+    +'<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'
+    +'</div>';
+  document.getElementById("modal-body").innerHTML=html;
+}
+
+function selLunch(m){
+  LUNCH=m;
+  var lbs=[0,15,20,30,45,60];
+  for(var i=0;i<lbs.length;i++){
+    var b=document.getElementById("lb"+lbs[i]);
+    if(b)b.className="lb"+(lbs[i]===m?" on":"");
+  }
+  updLunch();
+}
+function selLunchOther(v){
+  LUNCH=parseInt(v)||0;
+  var lbs=[0,15,20,30,45,60];
+  for(var i=0;i<lbs.length;i++){
+    var b=document.getElementById("lb"+lbs[i]);
+    if(b)b.className="lb";
+  }
+  updLunch();
+}
+function updLunch(){
+  var raw=window._stopRaw||0;
+  var bill=Math.max(0,raw-(LUNCH/60));
+  var dr=document.getElementById("lunch-deduct");
+  var dv=document.getElementById("lunch-deduct-val");
+  var bv=document.getElementById("billable-val");
+  if(dr)dr.style.display=LUNCH>0?"flex":"none";
+  if(dv)dv.textContent="− "+LUNCH+"min";
+  if(bv)bv.textContent=fHrs(bill);
+}
+
+function doClockOff(){
+  if(!clocked)return;
+  var raw=window._stopRaw||0;
+  var bill=Math.max(0,raw-(LUNCH/60));
+  var entry={
+    id:uid(),memberId:WHO.id,memberName:WHO.name,
+    client:clocked.client,site:clocked.site,machine:clocked.machine,
+    attachment:clocked.attachment,notes:clocked.notes,
+    start:clocked.start,end:window._stopEnd,
+    dur:bill,rawDur:raw,lunch:LUNCH
+  };
+  entries.unshift(entry);
+  clocked=null;
+  saveAll();hideBanner();stopTimer();closeModal();
+  drawTab();
+  toast("Saved — "+fHrs(bill)+(LUNCH>0?" (excl. "+LUNCH+"min lunch)":""));
+}
+
+// ══════════════════════════════════════════
+// HISTORY TAB
+// ══════════════════════════════════════════
+function buildHistory(){
+  var myE=[];
+  for(var i=0;i<entries.length;i++){if(entries[i].memberId===WHO.id)myE.push(entries[i]);}
+  if(!myE.length)return'<div class="card"><div class="empty"><div style="font-size:30px;margin-bottom:10px">📋</div>No entries yet.</div></div>';
+
+  var totAll=0;for(var i=0;i<myE.length;i++)totAll+=myE[i].dur||0;
+
+  var html='<div class="card" style="border-color:#1A6B3C40;margin-bottom:4px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div><div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Total All Time</div>'
+    +'<div style="font-size:20px;font-weight:800;color:#22A05A">'+fHrs(totAll)+'</div></div>'
+    +'<button class="btn btn-green btn-sm" onclick="doShareAll()">📤 Share Hours</button>'
+    +'</div></div>';
+
+  // Group by week
+  var wks={};
+  for(var i=0;i<myE.length;i++){
+    var d=new Date(myE[i].start);
+    var mon=new Date(d);mon.setDate(d.getDate()-(d.getDay()||7)+1);
+    var key=mon.toDateString();
+    if(!wks[key]){wks[key]={label:"Week of "+mon.toLocaleDateString("en-AU",{day:"2-digit",month:"short"}),list:[],tot:0};}
+    wks[key].list.push(myE[i]);
+    wks[key].tot+=myE[i].dur||0;
+  }
+
+  var keys=Object.keys(wks);
+  for(var k=0;k<keys.length;k++){
+    var wk=wks[keys[k]];
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px">'
+      +'<div style="font-size:11px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase">'+wk.label+'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="font-size:13px;font-weight:800;color:#22A05A">'+fHrs(wk.tot)+'</div>'
+      +'<button onclick="doShareWeek(\''+keys[k]+'\')" style="background:#1A6B3C18;border:1px solid #1A6B3C40;border-radius:6px;color:#22A05A;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit">📤</button>'
+      +'</div></div>';
+    for(var j=0;j<wk.list.length;j++){
+      var e=wk.list[j];
+      html+='<div class="card" style="margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:700;color:#F0EDE8">'+he(e.machine)+(e.attachment&&e.attachment!=="General Bucket"?" · "+he(e.attachment):"")+'</div>'
+        +(e.client?'<div style="font-size:12px;color:#C8C4BE;margin-top:2px">'+he(e.client)+(e.site?" · "+he(e.site):"")+'</div>':"")
+        +'<div style="font-size:11px;color:#6E6B64;margin-top:3px">'+fDate(e.start)+" · "+fTime(e.start)+" → "+fTime(e.end)+'</div>'
+        +(e.notes?'<div style="font-size:11px;color:#6E6B64;margin-top:3px;font-style:italic">'+he(e.notes)+'</div>':"")
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+        +'<div style="font-size:15px;font-weight:800;color:#22A05A">'+fHrs(e.dur)+'</div>'
+        +(e.lunch>0?'<div style="font-size:10px;color:#F5C518">☕ '+e.lunch+'min</div>':"")
+        +'<button onclick="delEntry(\''+e.id+'\')" style="background:none;border:none;color:#3A3A3A;font-size:11px;cursor:pointer;margin-top:4px;padding:0">🗑 delete</button>'
+        +'</div></div></div>';
+    }
+  }
+  return html;
+}
+
+function delEntry(id){
+  if(!confirm("Delete this entry?"))return;
+  entries=entries.filter(function(e){return e.id!==id;});
+  saveAll();drawTab();toast("Deleted");
+}
+
+// ══════════════════════════════════════════
+// MANUAL TAB
+// ══════════════════════════════════════════
+function buildManual(){
+  var today=new Date().toISOString().split("T")[0];
+  var atts=["General Bucket","Trenching Bucket","Auger","Rock Breaker","Tilt Bucket","Clean-up Bucket"];
+  var attOpts="";for(var i=0;i<atts.length;i++)attOpts+='<option>'+atts[i]+'</option>';
+  var machs=["Hitachi ZX55U","Hino 700","Both"];
+  var machOpts="";for(var i=0;i<machs.length;i++)machOpts+='<option>'+machs[i]+'</option>';
+
+  var clientOpts=buildDatalist("dl2-clients",hist.clients||[]);
+  var siteOpts=buildDatalist("dl2-sites",hist.sites||[]);
+
+  var lbHtml='<div class="lunch-row">';
+  var lbs=[0,15,20,30,45,60];
+  for(var i=0;i<lbs.length;i++){
+    lbHtml+='<button class="lb'+(lbs[i]===0?" on":"")+'" id="mlb'+lbs[i]+'" onclick="mSelLunch('+lbs[i]+')">'+
+      (lbs[i]===0?"No Break":lbs[i]+"min")+'</button>';
+  }
+  lbHtml+='</div>';
+
+  return '<div class="card">'+clientOpts+siteOpts+
+    '<div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:14px">✎ Log Manual Entry</div>'+
+    '<div class="field"><label>Client</label><input id="me-client" list="dl2-clients" placeholder="e.g. South Coast Sand & Civil"/></div>'+
+    '<div class="field"><label>Site</label><input id="me-site" list="dl2-sites" placeholder="e.g. Goolwa North Stage 1"/></div>'+
+    '<div class="field"><label>Date *</label><input id="me-date" type="date" value="'+today+'"/></div>'+
+    '<div class="field-row">'+
+    '<div class="field"><label>Start *</label><input id="me-start" type="time"/></div>'+
+    '<div class="field"><label>End *</label><input id="me-end" type="time"/></div>'+
+    '</div>'+
+    '<div class="field"><label>Machine</label><select id="me-machine" onchange="meMAchChange()">'+machOpts+'</select></div>'+
+    '<div class="field" id="me-att-f"><label>Attachment</label><select id="me-attach">'+attOpts+'</select></div>'+
+    '<div style="margin-bottom:12px"><div style="font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px">Lunch Break</div>'+
+    lbHtml+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+    '<span style="font-size:11px;color:#6E6B64;white-space:nowrap">Other:</span>'+
+    '<input type="number" id="me-lunch-other" min="0" max="120" placeholder="mins" onchange="mSelLunchOther(this.value)"'+
+    ' style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:8px 10px;width:76px;font-family:inherit;font-size:13px"/>'+
+    '<input type="hidden" id="me-lunch-val" value="0"/>'+
+    '<span style="font-size:11px;color:#6E6B64">mins</span></div></div>'+
+    '<div class="field"><label>Notes (optional)</label><input id="me-notes" placeholder="Any notes"/></div>'+
+    '<button class="btn btn-green btn-full" onclick="saveManual()">Save Entry</button>'+
+    '</div>';
+}
+
+var MLUNCH=0;
+function mSelLunch(m){
+  MLUNCH=m;
+  document.getElementById("me-lunch-val").value=m;
+  var lbs=[0,15,20,30,45,60];
+  for(var i=0;i<lbs.length;i++){
+    var b=document.getElementById("mlb"+lbs[i]);
+    if(b)b.className="lb"+(lbs[i]===m?" on":"");
+  }
+}
+function mSelLunchOther(v){
+  MLUNCH=parseInt(v)||0;
+  document.getElementById("me-lunch-val").value=MLUNCH;
+  var lbs=[0,15,20,30,45,60];
+  for(var i=0;i<lbs.length;i++){var b=document.getElementById("mlb"+lbs[i]);if(b)b.className="lb";}
+}
+function meMAchChange(){
+  var m=document.getElementById("me-machine");
+  var f=document.getElementById("me-att-f");
+  if(m&&f)f.style.display=(m.value==="Hino 700")?"none":"block";
+}
+
+function saveManual(){
+  var client=(document.getElementById("me-client")||{}).value||"";
+  var site=(document.getElementById("me-site")||{}).value||"";
+  var date=(document.getElementById("me-date")||{}).value||"";
+  var startT=(document.getElementById("me-start")||{}).value||"";
+  var endT=(document.getElementById("me-end")||{}).value||"";
+  if(!date||!startT||!endT){toast("Please enter date, start and end time","err");return;}
+  var sISO=new Date(date+"T"+startT).toISOString();
+  var eISO=new Date(date+"T"+endT).toISOString();
+  if(new Date(eISO)<=new Date(sISO)){toast("End must be after start","err");return;}
+  var raw=(new Date(eISO)-new Date(sISO))/3600000;
+  var lunch=parseInt((document.getElementById("me-lunch-val")||{}).value)||0;
+  var dur=Math.max(0,raw-(lunch/60));
+  var machine=(document.getElementById("me-machine")||{}).value||"Hitachi ZX55U";
+  var attach=machine!=="Hino 700"?((document.getElementById("me-attach")||{}).value||"General Bucket"):"";
+  var notes=(document.getElementById("me-notes")||{}).value||"";
+  addHist("clients",client);addHist("sites",site);
+  entries.unshift({id:uid(),memberId:WHO.id,memberName:WHO.name,
+    client:client.trim(),site:site.trim(),machine:machine,attachment:attach,notes:notes.trim(),
+    start:sISO,end:eISO,dur:dur,rawDur:raw,lunch:lunch});
+  entries.sort(function(a,b){return new Date(b.start)-new Date(a.start);});
+  saveAll();goTab("history");
+  toast("Entry saved — "+fHrs(dur));
+}
+
+// ══════════════════════════════════════════
+// MANAGE TAB
+// ══════════════════════════════════════════
+function buildManage(){
+  var mgrPin=gl("ae_mgr","0000");
+  var html='<div class="card" style="border-color:#E8580A40">'
+    +'<div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:4px">⚙ Manager Panel</div>'
+    +'<div style="font-size:11px;color:#6E6B64;margin-bottom:14px">Your PIN: '+he(mgrPin)+'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn btn-green" onclick="showAddWorker()">+ Add Worker</button>'
+    +'<button class="btn btn-ghost" onclick="showChangeMgrPin()">🔑 Change Manager PIN</button>'
+    +'</div></div>';
+
+  html+='<div class="card"><div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:12px">👷 Workers ('+members.length+')</div>';
+  for(var i=0;i<members.length;i++){
+    var m=members[i];
+    var mE=[];for(var j=0;j<entries.length;j++){if(entries[j].memberId===m.id)mE.push(entries[j]);}
+    var wkAgo=Date.now()-7*86400000;
+    var wkH=0,totH=0;
+    for(var j=0;j<mE.length;j++){totH+=mE[j].dur||0;if(new Date(mE[j].start).getTime()>=wkAgo)wkH+=mE[j].dur||0;}
+    html+='<div style="background:#0D0D0D;border-radius:10px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      +'<div><div style="font-size:14px;font-weight:800;color:#F0EDE8">'+he(m.name)+'</div>'
+      +'<div style="font-size:11px;color:#6E6B64;margin-top:2px">'+he(m.role||"Operator")+" · PIN: "+he(m.pin)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:12px;color:#22A05A">'+fHrs(wkH)+' this week</div>'
+      +'<div style="font-size:11px;color:#6E6B64">'+fHrs(totH)+' total</div></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      +'<button class="btn btn-blue btn-sm" onclick="viewWorker(\''+m.id+'\')">📋 Hours</button>'
+      +'<button class="btn btn-orange btn-sm" onclick="editWorker(\''+m.id+'\')">✏️ Edit</button>'
+      +(members.length>1?'<button class="btn btn-red btn-sm" onclick="removeWorker(\''+m.id+'\')">🗑 Remove</button>':"")
+      +'</div></div>';
+  }
+  html+='</div>';
+
+  // Week summary
+  var wkAgo2=Date.now()-7*86400000;
+  var byW={};
+  for(var i=0;i<entries.length;i++){
+    if(new Date(entries[i].start).getTime()>=wkAgo2){
+      var n=entries[i].memberName||"Unknown";
+      if(!byW[n])byW[n]=0;
+      byW[n]+=entries[i].dur||0;
+    }
+  }
+  var wNames=Object.keys(byW);
+  html+='<div class="card" style="border-color:#2878CC40"><div style="font-size:13px;font-weight:800;color:#F0EDE8;margin-bottom:12px">📊 This Week\'s Hours</div>';
+  if(!wNames.length){
+    html+='<div style="color:#6E6B64;font-size:13px">No entries this week</div>';
+  } else {
+    for(var i=0;i<wNames.length;i++){
+      html+='<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #282828">'
+        +'<span style="color:#F0EDE8;font-size:13px">'+he(wNames[i])+'</span>'
+        +'<span style="color:#22A05A;font-weight:700;font-size:13px">'+fHrs(byW[wNames[i]])+'</span>'
+        +'</div>';
+    }
+  }
+  html+='</div>';
+  return html;
+}
+
+function showAddWorker(){
+  openModal("+ Add Worker");
+  document.getElementById("modal-body").innerHTML=
+    '<div class="field"><label>Full Name *</label><input id="aw-name" placeholder="e.g. John Smith"/></div>'+
+    '<div class="field"><label>Role</label><input id="aw-role" placeholder="Operator" value="Operator"/></div>'+
+    '<div class="field"><label>PIN (4 digits) *</label><input id="aw-pin" type="tel" maxlength="4" placeholder="e.g. 5678"/></div>'+
+    '<div style="font-size:11px;color:#6E6B64;margin-bottom:14px">Each worker needs a unique 4-digit PIN.</div>'+
+    '<div style="display:flex;gap:10px">'+
+    '<button class="btn btn-green" style="flex:1" onclick="doAddWorker()">Add Worker</button>'+
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'+
+    '</div>';
+}
+
+function doAddWorker(){
+  var name=((document.getElementById("aw-name")||{}).value||"").trim();
+  var role=((document.getElementById("aw-role")||{}).value||"Operator").trim();
+  var pin=((document.getElementById("aw-pin")||{}).value||"").trim();
+  if(!name){toast("Please enter a name","err");return;}
+  if(pin.length!==4||isNaN(Number(pin))){toast("PIN must be exactly 4 digits","err");return;}
+  var mgrPin=gl("ae_mgr","0000");
+  if(pin===mgrPin){toast("Cannot use the manager PIN","err");return;}
+  for(var i=0;i<members.length;i++){if(members[i].pin===pin){toast("PIN already in use by "+members[i].name,"err");return;}}
+  members.push({id:uid(),name:name,role:role,pin:pin});
+  saveAll();closeModal();drawTab();
+  toast(name+" added ✅");
+}
+
+function editWorker(id){
+  var m=null;for(var i=0;i<members.length;i++){if(members[i].id===id){m=members[i];break;}}
+  if(!m)return;
+  openModal("✏️ Edit Worker");
+  document.getElementById("modal-body").innerHTML=
+    '<div class="field"><label>Full Name *</label><input id="ew-name" value="'+he(m.name)+'"/></div>'+
+    '<div class="field"><label>Role</label><input id="ew-role" value="'+he(m.role||"Operator")+'"/></div>'+
+    '<div class="field"><label>PIN (4 digits)</label><input id="ew-pin" type="tel" maxlength="4" value="'+he(m.pin)+'"/></div>'+
+    '<div style="display:flex;gap:10px">'+
+    '<button class="btn btn-green" style="flex:1" onclick="doEditWorker(\''+id+'\')">Save</button>'+
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'+
+    '</div>';
+}
+
+function doEditWorker(id){
+  var name=((document.getElementById("ew-name")||{}).value||"").trim();
+  var role=((document.getElementById("ew-role")||{}).value||"Operator").trim();
+  var pin=((document.getElementById("ew-pin")||{}).value||"").trim();
+  if(!name){toast("Please enter a name","err");return;}
+  if(pin.length!==4||isNaN(Number(pin))){toast("PIN must be exactly 4 digits","err");return;}
+  var mgrPin=gl("ae_mgr","0000");
+  if(pin===mgrPin){toast("Cannot use the manager PIN","err");return;}
+  for(var i=0;i<members.length;i++){if(members[i].pin===pin&&members[i].id!==id){toast("PIN already in use by "+members[i].name,"err");return;}}
+  for(var i=0;i<members.length;i++){if(members[i].id===id){members[i].name=name;members[i].role=role;members[i].pin=pin;break;}}
+  saveAll();closeModal();drawTab();toast("Updated ✅");
+}
+
+function removeWorker(id){
+  var m=null;for(var i=0;i<members.length;i++){if(members[i].id===id){m=members[i];break;}}
+  if(!m||!confirm("Remove "+m.name+"? Their hours are kept."))return;
+  members=members.filter(function(x){return x.id!==id;});
+  saveAll();drawTab();toast(m.name+" removed");
+}
+
+function viewWorker(id){
+  var m=null;for(var i=0;i<members.length;i++){if(members[i].id===id){m=members[i];break;}}
+  if(!m)return;
+  var mE=[];for(var i=0;i<entries.length;i++){if(entries[i].memberId===id)mE.push(entries[i]);}
+  var tot=0;for(var i=0;i<mE.length;i++)tot+=mE[i].dur||0;
+  var wkAgo=Date.now()-7*86400000;
+  var wkH=0;for(var i=0;i<mE.length;i++){if(new Date(mE[i].start).getTime()>=wkAgo)wkH+=mE[i].dur||0;}
+  openModal("📋 "+m.name);
+  var html='<div style="display:flex;gap:10px;margin-bottom:14px">'
+    +'<div style="flex:1;background:#0D0D0D;border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">This Week</div><div style="font-size:22px;font-weight:800;color:#22A05A">'+fHrs(wkH)+'</div></div>'
+    +'<div style="flex:1;background:#0D0D0D;border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:#6E6B64;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">All Time</div><div style="font-size:22px;font-weight:800;color:#E8580A">'+fHrs(tot)+'</div></div>'
+    +'</div>';
+  if(!mE.length){html+='<div style="color:#6E6B64;font-size:13px;text-align:center;padding:20px 0">No entries yet</div>';}
+  else{
+    html+='<div style="max-height:300px;overflow-y:auto">';
+    var show=mE.slice(0,20);
+    for(var i=0;i<show.length;i++){
+      var e=show[i];
+      html+='<div class="entry-row"><div style="display:flex;justify-content:space-between">'
+        +'<div><div style="font-size:12px;color:#F0EDE8;font-weight:700">'+fDate(e.start)+'</div>'
+        +'<div style="font-size:11px;color:#6E6B64">'+he(e.machine)+(e.client?" · "+he(e.client):"")+'</div>'
+        +'<div style="font-size:11px;color:#6E6B64">'+fTime(e.start)+" → "+fTime(e.end)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#22A05A">'+fHrs(e.dur)+'</div>'
+        +(e.lunch>0?'<div style="font-size:10px;color:#F5C518">☕ '+e.lunch+'min</div>':"")
+        +'</div></div></div>';
+    }
+    html+='</div>';
+  }
+  html+='<div style="display:flex;gap:10px;margin-top:14px">'
+    +'<button class="btn btn-green" style="flex:1" onclick="shareWorker(\''+id+'\')">📤 Share Hours</button>'
+    +'<button class="btn btn-ghost" onclick="closeModal()">Close</button>'
+    +'</div>';
+  document.getElementById("modal-body").innerHTML=html;
+}
+
+function showChangeMgrPin(){
+  openModal("🔑 Change Manager PIN");
+  document.getElementById("modal-body").innerHTML=
+    '<div class="field"><label>New PIN (4 digits)</label><input id="mp-new" type="tel" maxlength="4" placeholder="e.g. 9999"/></div>'+
+    '<div class="field"><label>Confirm PIN</label><input id="mp-confirm" type="tel" maxlength="4" placeholder="Repeat PIN"/></div>'+
+    '<div style="display:flex;gap:10px">'+
+    '<button class="btn btn-green" style="flex:1" onclick="doChangeMgrPin()">Save PIN</button>'+
+    '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'+
+    '</div>';
+}
+
+function doChangeMgrPin(){
+  var p1=((document.getElementById("mp-new")||{}).value||"").trim();
+  var p2=((document.getElementById("mp-confirm")||{}).value||"").trim();
+  if(p1.length!==4||isNaN(Number(p1))){toast("Must be 4 digits","err");return;}
+  if(p1!==p2){toast("PINs don't match","err");return;}
+  for(var i=0;i<members.length;i++){if(members[i].pin===p1){toast("PIN in use by "+members[i].name,"err");return;}}
+  sl("ae_mgr",p1);closeModal();drawTab();toast("Manager PIN updated ✅");
+}
+
+// ══════════════════════════════════════════
+// SHARE
+// ══════════════════════════════════════════
+function buildShareText(name,ents){
+  var tot=0;for(var i=0;i<ents.length;i++)tot+=ents[i].dur||0;
+  var lines=["━━━━━━━━━━━━━━━━━━━━━━━","ANGEL EARTHWORKS & CIVIL","Timesheet — "+name,
+    new Date().toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"}),"━━━━━━━━━━━━━━━━━━━━━━━",""];
+  for(var i=0;i<ents.length;i++){
+    var e=ents[i];
+    lines.push((i+1)+". "+fDate(e.start)+" "+fTime(e.start)+"–"+fTime(e.end));
+    lines.push("   "+String(e.machine||"")+(e.client?" | "+String(e.client):"")+(e.site?" | "+String(e.site):""));
+    lines.push("   Hours: "+fHrs(e.dur)+(e.lunch>0?" (excl. "+e.lunch+"min lunch)":""));
+    lines.push("");
+  }
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("TOTAL: "+fHrs(tot));
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━");
+  return lines.join("\n");
+}
+
+function doShare(text,title){
+  if(navigator.share){navigator.share({title:title,text:text}).catch(function(){});}
+  else if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){toast("Copied to clipboard");}).catch(function(){showTextFallback(text);});}
+  else{showTextFallback(text);}
+}
+
+function showTextFallback(text){
+  openModal("📋 Copy Timesheet");
+  document.getElementById("modal-body").innerHTML=
+    '<div style="font-size:12px;color:#6E6B64;margin-bottom:10px">Press and hold to select all, then copy.</div>'+
+    '<textarea readonly onclick="this.select()" style="background:#0D0D0D;border:1px solid #282828;border-radius:8px;color:#F0EDE8;padding:12px;width:100%;height:280px;font-size:11px;line-height:1.6;font-family:\'Courier New\',monospace;resize:none">'+text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</textarea>'+
+    '<button class="btn btn-green" style="width:100%;margin-top:12px" onclick="closeModal()">Done</button>';
+}
+
+function doShareAll(){
+  var myE=[];for(var i=0;i<entries.length;i++){if(entries[i].memberId===WHO.id)myE.push(entries[i]);}
+  if(!myE.length){toast("No entries to share","err");return;}
+  doShare(buildShareText(WHO.name,myE),"Timesheet — "+WHO.name);
+}
+
+function doShareWeek(weekKey){
+  var wkDate=new Date(weekKey);
+  var wkEnd=new Date(wkDate);wkEnd.setDate(wkDate.getDate()+7);
+  var myE=[];
+  for(var i=0;i<entries.length;i++){
+    if(entries[i].memberId===WHO.id){
+      var d=new Date(entries[i].start);
+      if(d>=wkDate&&d<wkEnd)myE.push(entries[i]);
+    }
+  }
+  if(!myE.length){toast("No entries for that week","err");return;}
+  doShare(buildShareText(WHO.name,myE),"Week timesheet — "+WHO.name);
+}
+
+function shareWorker(id){
+  var m=null;for(var i=0;i<members.length;i++){if(members[i].id===id){m=members[i];break;}}
+  if(!m)return;
+  var mE=[];for(var i=0;i<entries.length;i++){if(entries[i].memberId===id)mE.push(entries[i]);}
+  if(!mE.length){toast("No entries for "+m.name,"err");return;}
+  doShare(buildShareText(m.name,mE),"Hours — "+m.name);
+}
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+function openModal(title){
+  document.getElementById("modal-title").textContent=title;
+  document.getElementById("modal-body").innerHTML="";
+  document.getElementById("modal-bg").className="open";
+}
+function closeModal(){document.getElementById("modal-bg").className="";}
+function bgClick(e){if(e.target===document.getElementById("modal-bg"))closeModal();}
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal();});
+
+// Init
+drawDots();
+</script>
+</body>
+</html>
